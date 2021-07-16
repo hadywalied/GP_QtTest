@@ -1,30 +1,42 @@
-import asyncio
-import concurrent.futures
-from PySide2.QtWidgets import (QMainWindow, QAction, QStackedWidget, QSplitter,
-                               QPlainTextEdit, QMessageBox, QMenuBar, QPushButton, QVBoxLayout, QWidget, QLabel,
+import sys
+from PySide2 import QtGui, QtCore
+from PySide2.QtWidgets import (QMainWindow,
+                               QPushButton, QWidget, QLabel,
                                QHBoxLayout, QVBoxLayout, QCheckBox,
-                               QProgressBar, QListWidget, QListWidgetItem, QListView,
-                               QTextEdit, QRadioButton, QButtonGroup, QAbstractItemView)
-from PySide2.QtGui import QColor, QIcon, QMouseEvent, QPixmap, QFont
-from PySide2.QtCore import Qt, Signal
+                               QProgressBar, QListWidget, QListWidgetItem,
+                               QTextEdit, )
+from PySide2.QtGui import QFont
+from PySide2.QtCore import Qt
 
+from Core.infer_threaded import ThreadClass
 from Core.inference import InferenceClass
+
+
+class EmittingStream(QtCore.QObject):
+
+    textWritten = QtCore.Signal(str)
+
+    def __init__(self, textWrittenFunction):
+        QtCore.QObject.__init__(self)
+        self.textWritten.connect(textWrittenFunction)
+
+    def write(self, text):
+        self.textWritten.emit(str(text))
 
 
 class MainWindow(QMainWindow):
     def __init__(self):
         super(MainWindow, self).__init__()
 
-        # Signals slots
+        # Log Signal
+        sys.stdout = EmittingStream(textWrittenFunction=self.normalOutputWritten)
+
+        # inference class
         self.inference_class = InferenceClass()
-        self.inference_class.outputSignal.connect(self.showOutput)
-        self.inference_class.toggleProgressAndButton.connect(self.toggleViews)
-        self.inference_class.loggingSignal.connect(self.printLogs)
 
         # components
         self.Title = QLabel('Hello\n Please, Choose a Model and Enter the text Passage to be summarized.')
         self.Title.setMargin(20)
-        # self.Title.setPixmap(pixmap)
         self.Title.setAlignment(Qt.AlignHCenter)
 
         self.listWidget = QListWidget()
@@ -56,7 +68,6 @@ class MainWindow(QMainWindow):
         self.outputLabel.hide()
         self.outputLabel.setFont(QFont('Ariel', 12, QFont.ExtraBold))
         self.outputField = QTextEdit()
-        # self.outputField.setDisabled(True)
         self.outputField.setDocumentTitle("Summary")
         self.outputField.hide()
         self.outputField.setFont(QFont('Ariel', 16, QFont.ExtraBold))
@@ -71,15 +82,23 @@ class MainWindow(QMainWindow):
         self.logLabel.hide()
         self.logLabel.setFont(QFont('Ariel', 10, QFont.ExtraBold))
 
+        self.textEdit = QTextEdit()
+        self.textEdit.hide()
+
         self.window = QWidget()
         self.window.resize(800, 800)
         self.layout = QVBoxLayout()
         self.layout.addWidget(self.Title)
-        # self.layout.addLayout(self.studentGroup)
 
         self.modelLayout = QHBoxLayout()
         self.modelLayout.addWidget(self.listWidget)
         self.modelLayout.addWidget(self.quantizedCheckbox)
+
+        self.LoggingLayout = QHBoxLayout()
+        self.showLogsButton = QPushButton('Logs')
+        self.showLogsButton.clicked.connect(lambda: self.showLogs())
+        self.LoggingLayout.addWidget(self.logLabel)
+        self.LoggingLayout.addWidget(self.showLogsButton)
 
         self.layout.addLayout(self.modelLayout)
 
@@ -88,9 +107,26 @@ class MainWindow(QMainWindow):
         self.layout.addWidget(self.progress)
         self.layout.addWidget(self.outputLabel)
         self.layout.addWidget(self.outputField)
-        self.layout.addWidget(self.logLabel)
-
+        self.layout.addLayout(self.LoggingLayout)
         self.window.setLayout(self.layout)
+
+        self.textEditVisibility = False
+
+    def __del__(self):
+        # Restore sys.stdout
+        sys.stdout = sys.__stdout__
+
+    def normalOutputWritten(self, text):
+        """Append text to the QTextEdit."""
+        # Maybe QTextEdit.append() works as well, but this is how I do it:
+        cursor = self.textEdit.textCursor()
+        cursor.movePosition(QtGui.QTextCursor.End)
+        cursor.insertText(text)
+        self.textEdit.setTextCursor(cursor)
+        self.textEdit.ensureCursorVisible()
+
+    def showLogs(self):
+        self.textEdit.setVisible(not self.textEditVisibility)
 
     def show(self):
         self.window.show()
@@ -104,18 +140,20 @@ class MainWindow(QMainWindow):
         text = self.inputField.placeholderText() if text == '' else text
         item = self.listWidget.currentItem()
         checked = self.quantizedCheckbox.isChecked()
-        self.summarize(text, item, checked)
-
-    def summarize(self, text, item, checked):
-        asyncio.run(self.inference_class.infer(text=text, model=item, quantized=checked))
+        self.mythread = ThreadClass({'text': text, 'models': item, 'quantized': checked}, self.inference_class)
+        self.mythread.outputSignal.connect(self.showOutput)
+        self.mythread.errorSignal.connect(self.printLogs)
+        self.mythread.loggingSignal.connect(self.printLogs)
+        self.mythread.start()
 
     def showOutput(self, output):
         self.outputField.show()
         self.outputLabel.show()
         self.outputField.setText(output if output != '' else 'please enter proper input')
-
-    def toggleViews(self, flag):
-        pass
+        self.progress.hide()
+        self.button.setDisabled(False)
+        self.mythread.stop()
 
     def printLogs(self, logMsg):
-        pass
+        self.logLabel.show()
+        self.logLabel.setText(logMsg)
