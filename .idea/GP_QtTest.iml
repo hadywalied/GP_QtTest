@@ -4,8 +4,5 @@
     <content url="file://$MODULE_DIR$" />
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="module" module-name="LUT" />
-    <orderEntry type="module" module-name="PyPlotter" />
-    <orderEntry type="module" module-name="quantization_testsuite" />
   </component>
 </module>

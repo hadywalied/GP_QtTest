@@ -3,9 +3,6 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/.idea/GP_QtTest.iml" filepath="$PROJECT_DIR$/.idea/GP_QtTest.iml" />
-      <module fileurl="file://D:/ADT/LUT/.idea/LUT.iml" filepath="D:/ADT/LUT/.idea/LUT.iml" />
-      <module fileurl="file://$PROJECT_DIR$/../PyPlotter/.idea/PyPlotter.iml" filepath="$PROJECT_DIR$/../PyPlotter/.idea/PyPlotter.iml" />
-      <module fileurl="file://$PROJECT_DIR$/../quantization_testsuite/.idea/quantization_testsuite.iml" filepath="$PROJECT_DIR$/../quantization_testsuite/.idea/quantization_testsuite.iml" />
     </modules>
   </component>
 </project>
