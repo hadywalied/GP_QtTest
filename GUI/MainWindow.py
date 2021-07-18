@@ -9,11 +9,10 @@ from PySide2.QtGui import QFont
 from PySide2.QtCore import Qt
 
 from Core.infer_threaded import ThreadClass
-from Core.inference import InferenceClass
+from Core.inference import InferenceClass, modelspaths
 
 
 class EmittingStream(QtCore.QObject):
-
     textWritten = QtCore.Signal(str)
 
     def __init__(self, textWrittenFunction):
@@ -35,28 +34,20 @@ class MainWindow(QMainWindow):
         self.inference_class = InferenceClass()
 
         # components
-        self.Title = QLabel('Hello\n Please, Choose a Model and Enter the text Passage to be summarized.')
+        self.Title = QLabel('Hello\n Please Choose a Model and Enter the text Passage to be summarized.')
         self.Title.setMargin(20)
         self.Title.setAlignment(Qt.AlignHCenter)
+        self.Title.setFont(QFont('Ariel', 16, QFont.DemiBold))
 
         self.listWidget = QListWidget()
 
-        item1 = QListWidgetItem('Pegasus-xsum  16-16')
-        item2 = QListWidgetItem('Pegasus-xsum SF 16-12')
-        item3 = QListWidgetItem('Pegasus-xsum SF 16-8')
-        item4 = QListWidgetItem('Pegasus-xsum SF 16-4')
-        item5 = QListWidgetItem('Pegasus-xsum PL 16-4')
-        item6 = QListWidgetItem('Pegasus-xsum PL 12-6')
-        item7 = QListWidgetItem('Pegasus-xsum PL 12-3')
+        items = list(modelspaths.keys())
+        for item_text in items:
+            item = QListWidgetItem(item_text)
+            self.listWidget.addItem(item)
+        item = self.listWidget.item(0)
+        self.listWidget.setCurrentItem(item)
 
-        self.listWidget.addItem(item1)
-        self.listWidget.addItem(item2)
-        self.listWidget.addItem(item3)
-        self.listWidget.addItem(item4)
-        self.listWidget.addItem(item5)
-        self.listWidget.addItem(item6)
-        self.listWidget.addItem(item7)
-        self.listWidget.setCurrentItem(item1)
         self.quantizedCheckbox = QCheckBox('Quantized')
 
         self.inputField = QTextEdit()
@@ -70,7 +61,7 @@ class MainWindow(QMainWindow):
         self.outputField = QTextEdit()
         self.outputField.setDocumentTitle("Summary")
         self.outputField.hide()
-        self.outputField.setFont(QFont('Ariel', 16, QFont.ExtraBold))
+        self.outputField.setFont(QFont('Ariel', 14, QFont.ExtraBold))
 
         self.button = QPushButton('Summarize')
         self.button.clicked.connect(lambda: self.onClicked())
@@ -78,9 +69,10 @@ class MainWindow(QMainWindow):
         self.progress = QProgressBar()
         self.progress.hide()
 
-        self.logLabel = QLabel("Log:")
-        self.logLabel.hide()
-        self.logLabel.setFont(QFont('Ariel', 10, QFont.ExtraBold))
+        self.logLabel = QLabel()
+        # self.logLabel.hide()
+        self.logLabel.setText("                                                ")
+        self.logLabel.setFont(QFont('Ariel', 12, QFont.ExtraBold))
 
         self.textEdit = QTextEdit()
         self.textEdit.hide()
@@ -94,11 +86,14 @@ class MainWindow(QMainWindow):
         self.modelLayout.addWidget(self.listWidget)
         self.modelLayout.addWidget(self.quantizedCheckbox)
 
-        self.LoggingLayout = QHBoxLayout()
-        self.showLogsButton = QPushButton('Logs')
+        self.LoggingLayout = QVBoxLayout()
+        self.LoggingLayout_inner = QHBoxLayout()
+        self.showLogsButton = QPushButton('Show Logs')
         self.showLogsButton.clicked.connect(lambda: self.showLogs())
-        self.LoggingLayout.addWidget(self.logLabel)
-        self.LoggingLayout.addWidget(self.showLogsButton)
+        self.LoggingLayout_inner.addWidget(self.logLabel)
+        self.LoggingLayout_inner.addWidget(self.showLogsButton)
+        self.LoggingLayout.addLayout(self.LoggingLayout_inner)
+        self.LoggingLayout.addWidget(self.textEdit)
 
         self.layout.addLayout(self.modelLayout)
 
@@ -127,6 +122,11 @@ class MainWindow(QMainWindow):
 
     def showLogs(self):
         self.textEdit.setVisible(not self.textEditVisibility)
+        self.textEditVisibility = not self.textEditVisibility
+        if self.textEditVisibility:
+            self.showLogsButton.setText('Hide Logs')
+        else:
+            self.showLogsButton.setText('Show Logs')
 
     def show(self):
         self.window.show()
