@@ -80,7 +80,7 @@ class MainWindow(QMainWindow):
         self.textEdit.hide()
 
         self.window = QWidget()
-        self.window.setWindowIcon(QtGui.QIcon('GUI\\icon.png'))
+        self.window.setWindowIcon(QtGui.QIcon('screens\\icon.png'))
         self.window.resize(800, 800)
         self.layout = QVBoxLayout()
         self.layout.addWidget(self.Title)

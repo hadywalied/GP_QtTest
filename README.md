@@ -1,12 +1,12 @@
 # Automatic Text Summarization GUI Demo
 
-![pegasus logo](C:\Users\himep\OneDrive\Pictures\pegasus logo.png)
+![pegasus logo](screens/icon.png)
 
 
 
 ## The GUI 
 
-![GUI Model](C:\Users\himep\OneDrive\Pictures\GUI Model.jpg)
+![GUI Model](screens/GUI Model.jpg)
 
 1. **the List of models to be chosen from**
 2. **whether the model should be quantized or not**
