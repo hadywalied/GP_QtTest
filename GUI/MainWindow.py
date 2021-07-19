@@ -5,12 +5,13 @@ from PySide2.QtWidgets import (QMainWindow,
                                QHBoxLayout, QVBoxLayout, QCheckBox,
                                QProgressBar, QListWidget, QListWidgetItem,
                                QTextEdit, )
-from PySide2.QtGui import QFont
+from PySide2.QtGui import QFont, QIcon
 from PySide2.QtCore import Qt
 
 from Core.infer_threaded import ThreadClass
 from Core.inference import InferenceClass, modelspaths
 
+import pathlib as path
 
 class EmittingStream(QtCore.QObject):
     textWritten = QtCore.Signal(str)
@@ -25,7 +26,8 @@ class EmittingStream(QtCore.QObject):
 
 class MainWindow(QMainWindow):
     def __init__(self):
-        super(MainWindow, self).__init__()
+        super().__init__()
+
 
         # Log Signal
         sys.stdout = EmittingStream(textWrittenFunction=self.normalOutputWritten)
@@ -78,6 +80,7 @@ class MainWindow(QMainWindow):
         self.textEdit.hide()
 
         self.window = QWidget()
+        self.window.setWindowIcon(QtGui.QIcon('GUI\\icon.png'))
         self.window.resize(800, 800)
         self.layout = QVBoxLayout()
         self.layout.addWidget(self.Title)
