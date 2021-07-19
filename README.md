@@ -6,7 +6,7 @@
 
 ## The GUI 
 
-![GUI Model](screens/GUI Model.jpg)
+![GUI Model](screens/GUI_Model.jpg)
 
 1. **the List of models to be chosen from**
 2. **whether the model should be quantized or not**
