@@ -1,16 +1,15 @@
-
+import torch
 from PySide2.QtCore import Signal, QObject
-from transformers import AutoTokenizer, PegasusForConditionalGeneration
+from transformers import AutoTokenizer, PegasusForConditionalGeneration, AutoModelForSeq2SeqLM
 from torch.quantization import quantize_dynamic
 
-
-modelspaths = {'Pegasus-xsum  16-16': ('D:\\Pegasus_Model\\saves\\pegasus-gigaword', 19),
-               'Pegasus-xsum  SF 16-12': '',
-               'Pegasus-xsum  SF 16-8': '',
-               'Pegasus-xsum  SF 16-4': '',
-               'Pegasus-xsum  PL 16-4': '',
-               'Pegasus-xsum  PL 12-6': '',
-               'Pegasus-xsum  PL 12-3': ''}
+modelspaths = {'Pegasus-xsum  16-16': ('E:\\GP Models\\teacher_16_16', 24.6),
+               'Pegasus-xsum  TA/KD 16-4': ('E:\\GP Models\\pipeline\\xsum 16-4\\best_tfmr', 15.75),
+               # 'Pegasus-xsum  SF 16-4': (''),
+               'Pegasus-xsum  PL 16-4': ('E:\\GP Models\\teacher_16_4.pt', 21.67),
+               'Pegasus-xsum  PL 12-3': ('E:\\GP Models\\trained_student_12ecn_3dec_1.pt', 17.2),
+               'Pegasus-xsum  PL 12-3 unfreezed': (
+                   'E:\\GP Models\\trained_student_12ecn_3dec_unfreeze_last2_1.pt', 18.65)}
 
 from contextlib import contextmanager
 import time
@@ -30,14 +29,13 @@ def timer(msg):
 
 class InferenceClass(QObject):
 
-
     def __init__(self):
         QObject.__init__(self)
 
     def infer(self, text, models, quantized):
         model_ckpt = modelspaths[models.text()][0]
         Rouge_Score = modelspaths[models.text()][1]
-        max_input_length = 128
+        max_input_length = 512
 
         model = self.getModel(model_ckpt, max_input_length, quantized)
 
@@ -51,8 +49,10 @@ class InferenceClass(QObject):
 
     def getModel(self, path, max_input_length, quantized):
         with timer('Loading Model'):
-            model = PegasusForConditionalGeneration.from_pretrained(path, max_length=max_input_length,
-                                                                    max_position_embeddings=max_input_length)
+            if (path.__contains__(".pt")):
+                model = torch.load(path)
+            else:
+                model = AutoModelForSeq2SeqLM.from_pretrained(path)
 
         if quantized:
             with timer('Quantize the Model'):
