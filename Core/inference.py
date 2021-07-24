@@ -4,13 +4,15 @@ from transformers import AutoTokenizer, PegasusForConditionalGeneration, AutoMod
 from torch.quantization import quantize_dynamic
 
 modelspaths = {'Pegasus-xsum  16-16': ('E:\\GP Models\\teacher_16_16', 24.6),
+               # 'Pegasus-xsum  TA/KD 16-12': ('E:\\GP Models\\pipeline\\xsum 16-12\\best_tfmr', 22.1),
+               # 'Pegasus-xsum  TA/KD 16-8': ('E:\\GP Models\\pipeline\\xsum 16-8_\\best_tfmr', 21.3),
                'Pegasus-xsum  TA/KD 16-4': ('E:\\GP Models\\pipeline\\xsum 16-4\\best_tfmr', 15.75),
                # 'Pegasus-xsum  SF 16-4': (''),
-               'Pegasus-xsum  PL 16-4': ('E:\\GP Models\\teacher_16_4.pt', 21.67),
+               'Pegasus-xsum  PL 16-4': ('E:\\GP Models\\teacher_16_4.pt', 21.92),
+               'Pegasus-xsum  PL 16-2': ('E:\\GP Models\\trained_student16_2_1.pt', 21.2),
                'Pegasus-xsum  PL 12-3': ('E:\\GP Models\\trained_student_12ecn_3dec_1.pt', 17.2),
                'Pegasus-xsum  PL 12-3 unfreezed': (
                    'E:\\GP Models\\trained_student_12ecn_3dec_unfreeze_last2_1.pt', 18.65)}
-
 from contextlib import contextmanager
 import time
 import warnings
@@ -38,25 +40,30 @@ class InferenceClass(QObject):
         max_input_length = 512
 
         model = self.getModel(model_ckpt, max_input_length, quantized)
-
-        tokens = self.tokenize(text=text, tokenizerName='google/pegasus-gigaword',
+        model.eval()
+        tokens = self.tokenize(text=text, tokenizerName='google/pegasus-xsum',
                                max_input_length=max_input_length)
 
         output_tokens, elapsed_time = self.generateSummary(model=model, tokens=tokens)
 
-        output = self.decodeOutput(tokenizerName='google/pegasus-gigaword', tokens=output_tokens)
+        output = self.decodeOutput(tokenizerName='google/pegasus-xsum', tokens=output_tokens)
+
+        del model
+        import gc
+        gc.collect()
         return output, elapsed_time, Rouge_Score
 
     def getModel(self, path, max_input_length, quantized):
         with timer('Loading Model'):
             if (path.__contains__(".pt")):
-                model = torch.load(path)
+                model = torch.load(path, map_location=torch.device('cpu'))
             else:
                 model = AutoModelForSeq2SeqLM.from_pretrained(path)
 
         if quantized:
             with timer('Quantize the Model'):
                 model = quantize_dynamic(model)
+                # model.save_pretrained('E:\\GP Models\\quantized_16_8')
 
         return model
 
